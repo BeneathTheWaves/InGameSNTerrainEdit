@@ -1,6 +1,4 @@
 ﻿using ClassLibrary1.WorldStreaming;
-using DearImGuiInjection.BepInEx;
-using DearImguiSharp;
 using IL.UnityEngine.PostProcessing;
 using mset;
 using System;
@@ -19,8 +17,8 @@ using UnityEngine.SceneManagement;
 using uSky;
 using UWE;
 using WorldStreaming;
-using static Nautilus.Assets.PrefabTemplates.FabricatorTemplate;
-
+using DearImguiSharp;
+using DearImGuiInjection.BepInEx;
 namespace ClassLibrary1
 {
     internal class Editor
@@ -117,7 +115,7 @@ namespace ClassLibrary1
                     SkyManager._Instance.GlobalSky = go.GetComponent<Sky>();
             }
             Time.timeScale = 1f;
-            ImGui.GetIO().SetPlatformImeDataFn = null;
+            DearImguiSharp.ImGui.GetIO().SetPlatformImeDataFn = null;
             DearImGuiInjection.DearImGuiInjection.Render += GUI;
         }
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]

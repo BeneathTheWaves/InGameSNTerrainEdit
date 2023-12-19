@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Target Name="ILRepacker" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <PropertyGroup>
+        <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
 
+    </PropertyGroup>
     <ItemGroup>
 		<InputAssemblies Include="$(OutputPath)\ClassLibrary1.dll" />
         <InputAssemblies Include="$(OutputPath)\MMHOOK_Assembly-CSharp.dll" />
