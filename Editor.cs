@@ -36,18 +36,22 @@ namespace ClassLibrary1
         private string rad = "2.5";
         public static Int3 mousebatch;
         public static List<Int3> modifiedbatches = new();
-        public static List<Int3> modifiedbatcheswithtempfile = new();
         public static Dictionary<Int3, List<Octree>> modfiedoctrees = new();
         public static Dictionary<Int3, List<Int3>> modfiedblocks = new();
+        public static List<Int3> unloadedbatches = new();
         public static Dictionary<Int3, Dictionary<Int3, Int3>> modifiedindexes = new();
         public static bool showingAurora = false;
         public static int curBrushType = 1;
         public static bool showTypeWindow = false;
         public static void SaveForTempBatch(Int3 batchid)
         {
+            unloadedbatches.Add(batchid);
+        }
+        public static void SaveForBatch(Int3 batchid)
+        {
             if (!modifiedbatches.Contains(batchid))
                 return;
-            modifiedbatcheswithtempfile.Add(batchid);
+            
             using (var fs = File.Open(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch"), FileMode.Create))
             {
                 using (var bw = new BinaryWriter(fs))
@@ -74,8 +78,10 @@ namespace ClassLibrary1
         }
         public static void LoadForTempBatch(Int3 batchid)
         {
-            if (!modifiedbatcheswithtempfile.Contains(batchid))
+            if (!modifiedbatches.Contains(batchid))
                 return;
+            if(unloadedbatches.Contains(batchid))
+                unloadedbatches.Remove(batchid);
             Class1.logger.LogInfo($"Loading in temp batch ({batchid.x},{batchid.y},{batchid.z})");
             using (var fs = File.OpenRead(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch")))
             {
@@ -256,6 +262,21 @@ namespace ClassLibrary1
                                         bw.WriteUInt32(0);
                                         foreach (var batchid in modifiedbatches)
                                         {
+                                            if (unloadedbatches.Contains(batchid))
+                                            {
+                                                using (var fs_ = File.OpenRead(Path.Combine(Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName).FullName).FullName).FullName, "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch")))
+                                                {
+                                                    using (var br = new BinaryReader(fs_))
+                                                    {
+                                                        if (br.ReadUInt32() != 0)
+                                                        {
+                                                            throw new InvalidDataException("Invalid temp patch?!");
+                                                        }
+                                                        bw.Write(br.ReadBytes((int)br.BaseStream.Length - (int)br.BaseStream.Position));
+                                                    }
+                                                }
+                                                continue;
+                                            }
                                             Class1.logger.LogInfo(batchid.ToString());
                                             var modifiedtrees = modfiedoctrees[batchid];
                                             bw.Write((short)batchid.x);
@@ -277,6 +298,7 @@ namespace ClassLibrary1
                                 }
                             }
                         }
+                        /*
                         if (ImGui.MenuItemBool("Load", "Ctrl+S", false, true))
                         {
                             var openfilename = new OpenFileName();
@@ -318,7 +340,7 @@ namespace ClassLibrary1
                                 }
                             }
                         }
-
+                        */
                         ImGui.EndMenu();
                     }
                     ImGui.EndMenuBar();
@@ -493,6 +515,7 @@ namespace ClassLibrary1
         }
         void Update() 
         {
+            List<Int3> newmodbatches = new();
             foreach(var go in SceneManager.GetActiveScene().GetRootGameObjects())
             {
                 if (go.TryGetComponent<TerrainChunkPieceCollider>(out _))
@@ -606,6 +629,7 @@ namespace ClassLibrary1
                             octreestreamer.SetBatchOctree(@int, root);
                             var numOctreesPerBatch = octreestreamer.numOctreesPerBatch;
                         var batchid = octreestreamer.batches.First(batch => batch.octrees.Contains(octree)).id;
+                        newmodbatches.Add(batchid);
                             if (!Editor.modifiedbatches.Contains(batchid))
                                 Editor.modifiedbatches.Add(batchid);
                             if (!Editor.modfiedoctrees.Keys.Contains(batchid))
@@ -630,6 +654,10 @@ namespace ClassLibrary1
                 Class1.logger.LogInfo("Loading in modified octrees!");
                 LargeWorldStreamer.main.streamerV2.clipmapStreamer.AddToRangesEdited(blockBounds);
                 LargeWorldStreamer.main.streamerV2.clipmapStreamer.FlushRangesEdited(octreestreamer.minLod, octreestreamer.maxLod);
+                foreach(var batchid in newmodbatches)
+                {
+                    SaveForBatch(batchid);
+                }
             }
         }
         // from reef editor
