@@ -19,6 +19,8 @@ using UWE;
 using WorldStreaming;
 using DearImguiSharp;
 using DearImGuiInjection.BepInEx;
+using static ClassLibrary1.Editor;
+using System.Net;
 namespace ClassLibrary1
 {
     internal class Editor
@@ -34,12 +36,74 @@ namespace ClassLibrary1
         private string rad = "2.5";
         public static Int3 mousebatch;
         public static List<Int3> modifiedbatches = new();
+        public static List<Int3> modifiedbatcheswithtempfile = new();
         public static Dictionary<Int3, List<Octree>> modfiedoctrees = new();
         public static Dictionary<Int3, List<Int3>> modfiedblocks = new();
-        public static Dictionary<Int3, Dictionary<Int3,Int3>> modifiedindexes = new();
+        public static Dictionary<Int3, Dictionary<Int3, Int3>> modifiedindexes = new();
         public static bool showingAurora = false;
         public static int curBrushType = 1;
         public static bool showTypeWindow = false;
+        public static void SaveForTempBatch(Int3 batchid)
+        {
+            if (!modifiedbatches.Contains(batchid))
+                return;
+            modifiedbatcheswithtempfile.Add(batchid);
+            using (var fs = File.Open(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch"), FileMode.Create))
+            {
+                using (var bw = new BinaryWriter(fs))
+                {
+                    bw.WriteUInt32(0);
+                    Class1.logger.LogInfo(batchid.ToString());
+                    var modifiedtrees = modfiedoctrees[batchid];
+                    bw.Write((short)batchid.x);
+                    bw.Write((short)batchid.y);
+                    bw.Write((short)batchid.z);
+                    bw.Write((byte)modifiedtrees.Count);
+                    var octreestreamer = LargeWorldStreamer.main.streamerV2.octreesStreamer;
+                    modifiedtrees.OrderBy(tree => GetIndex(batchid, tree));
+                    foreach (var octree in modifiedtrees)
+                    {
+                        byte index = GetIndex(batchid, octree);
+                        Class1.logger.LogInfo($"{batchid} + {index}");
+                        bw.Write(index);
+                        bw.Write((ushort)(octree.data.Length / 4));
+                        bw.WriteBytes(octree.data.ToArray());
+                    }
+                }
+            }
+        }
+        public static void LoadForTempBatch(Int3 batchid)
+        {
+            if (!modifiedbatcheswithtempfile.Contains(batchid))
+                return;
+            Class1.logger.LogInfo($"Loading in temp batch ({batchid.x},{batchid.y},{batchid.z})");
+            using (var fs = File.OpenRead(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch")))
+            {
+                using (var br = new BinaryReader(fs))
+                {
+                    if(br.ReadUInt32() != 0)
+                    {
+                        throw new InvalidDataException("Invalid temp patch?!");
+                    }
+                        try
+                        {
+                            ReadBatchId(br);
+                            Int3 batchId = batchid;
+                            Int3 id = batchId;
+                            ApplyBatchPatch(br, id);
+                            Class1.logger.LogInfo("Loading in modified octrees!");
+                            LargeWorldStreamer.main.streamerV2.clipmapStreamer.AddToRangesEdited(LargeWorldStreamer.main.GetBatchBlockBounds(id));
+                        }
+                        catch (EndOfStreamException)
+                        {
+                            throw new InvalidDataException("Invalid Patch!");
+                        }
+                    }
+
+                Class1.logger.LogInfo("Flushing Ranges Edited!");
+                LargeWorldStreamer.main.streamerV2.clipmapStreamer.FlushRangesEdited(PAXTerrainController.main.streamerV2.octreesStreamer.minLod, PAXTerrainController.main.streamerV2.octreesStreamer.maxLod);
+            }
+        }
         public static void StartLoad()
         {
             isInEditor = true;
@@ -199,7 +263,7 @@ namespace ClassLibrary1
                                             bw.Write((short)batchid.z);
                                             bw.Write((byte)modifiedtrees.Count);
                                             var octreestreamer = LargeWorldStreamer.main.streamerV2.octreesStreamer;
-                                            modifiedtrees.OrderBy(tree => GetIndex(batchid,tree));
+                                            modifiedtrees.OrderBy(tree => GetIndex(batchid, tree));
                                             foreach (var octree in modifiedtrees)
                                             {
                                                 byte index = GetIndex(batchid, octree);
@@ -209,12 +273,11 @@ namespace ClassLibrary1
                                                 bw.WriteBytes(octree.data.ToArray());
                                             }
                                         }
-                                        }
                                     }
                                 }
                             }
-                        /*
-                        if(ImGui.MenuItemBool("Load","Ctrl+S",false,true))
+                        }
+                        if (ImGui.MenuItemBool("Load", "Ctrl+S", false, true))
                         {
                             var openfilename = new OpenFileName();
                             openfilename.lStructSize = Marshal.SizeOf(openfilename);
@@ -224,69 +287,50 @@ namespace ClassLibrary1
                             openfilename.lpstrFileTitle = new string(new char[64]);
                             openfilename.nMaxFileTitle = openfilename.lpstrFileTitle.Length;
                             openfilename.lpstrTitle = "Open Patch";
-                            if(GetOpenFileName(ref openfilename))
+                            if (GetOpenFileName(ref openfilename))
                             {
                                 using (var fs = File.OpenRead(openfilename.lpstrFile))
                                 {
                                     using (var br = new BinaryReader(fs))
                                     {
-                                        var iszero = br.ReadUInt32() == 0;
-                                        if (!iszero)
-                                            return;
+                                        br.ReadUInt32();
                                         while (true)
                                         {
-                                            byte first;
-                                            try { first = br.ReadByte(); } catch (EndOfStreamException) { break; };
-
-                                            Int3 batchid = new Int3(
-                                                first | (br.ReadSByte() << 8),
-                                                br.ReadInt16(),
-                                                br.ReadInt16()
-                                            );
-
-                                            var batchtrees = LargeWorldStreamer.main.streamerV2.octreesStreamer.GetBatch(batchid);
-                                            var count = br.ReadByte();
-                                            for (int i = 0; i < count; i++)
+                                            try
                                             {
-                                                try { 
-                                                var index = br.ReadByte();
-                                                try
-                                                {
-                                                    var globalindex = GetGlobalIndex(batchid, index);
-                                                    batchtrees.octrees[globalindex.x,globalindex.y,globalindex.z].data.CopyFrom(br.ReadBytes(br.ReadUInt16() * 4));
-                                                }
-                                                catch (IndexOutOfRangeException)
-                                                {
-                                                    try
-                                                    {
-                                                        var globalindex = GetGlobalIndex(batchid,index);
-                                                        batchtrees.octrees.Set(globalindex.x, globalindex.y, globalindex.z, new Octree(batchid));
-                                                        batchtrees.octrees[globalindex.x, globalindex.y, globalindex.z].data.CopyFrom(br.ReadBytes(br.ReadUInt16() * 4));
-                                                    }
-                                                    catch (IndexOutOfRangeException)
-                                                    {
-                                                        Class1.logger.LogError("Invalid patch!");
-                                                    }
-                                                }
-                                                    }
+                                                Int3? batchId = ReadBatchId(br);
+                                                if (batchId is null) break;
+                                                Int3 id = batchId.Value;
+                                                ApplyBatchPatch(br, id);
+                                                Class1.logger.LogInfo("Loading in modified octrees!");
+                                                LargeWorldStreamer.main.streamerV2.clipmapStreamer.AddToRangesEdited(LargeWorldStreamer.main.GetBatchBlockBounds(id));
                                             }
-
-                                            var bounds = LargeWorldStreamer.main.GetBatchBounds(batchid);
-                                            var int3bounds = new Int3.Bounds(new Int3((int)bounds.min.x, (int)bounds.min.y, (int)bounds.min.z), new Int3((int)bounds.max.x, (int)bounds.max.y, (int)bounds.max.z));
-                                            LargeWorldStreamer.main.streamerV2.clipmapStreamer.AddToRangesEdited(int3bounds);
+                                            catch (EndOfStreamException)
+                                            {
+                                                throw new InvalidDataException("Invalid Patch!");
+                                            }
                                         }
+
                                     }
+
+                                    Class1.logger.LogInfo("Flushing Ranges Edited!");
+                                    LargeWorldStreamer.main.streamerV2.clipmapStreamer.FlushRangesEdited(PAXTerrainController.main.streamerV2.octreesStreamer.minLod, PAXTerrainController.main.streamerV2.octreesStreamer.maxLod);
                                 }
-                                Class1.logger.LogInfo("Flushing ranges edited!");
-                                LargeWorldStreamer.main.streamerV2.clipmapStreamer.FlushRangesEdited(LargeWorldStreamer.main.streamerV2.octreesStreamer.minLod, LargeWorldStreamer.main.streamerV2.octreesStreamer.maxLod);
                             }
                         }
-                        */
+
                         ImGui.EndMenu();
                     }
                     ImGui.EndMenuBar();
                 }
-
+                if(ImGui.Button("Exit Editor",DearImGuiInjection.Constants.DefaultVector2))
+                {
+                    UnityMainThreadDispatcher.Enqueue(() =>
+                    {
+                        Directory.Delete(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), true);
+                        SceneCleaner.Open();
+                    });
+                }
                 if(ImGui.Button("Remover Brush",DearImGuiInjection.Constants.DefaultVector2))
                 {
                     UnityMainThreadDispatcher.Enqueue(() =>
@@ -340,14 +384,34 @@ namespace ClassLibrary1
                         });
                     }
                 }
-                
+                ImGui.SliderFloat("Camera Speed", ref cam.GetComponent<FreeCam>().movementSpeed, 0.1f, 135f, null, (int)ImGuiSliderFlags.AlwaysClamp);
                 ImGui.Checkbox("Water", ref cam.GetComponent<WaterSurfaceOnCamera>().visible);
                 ImGui.Text($"Current mouse batch: {mousebatch}");
                 ImGui.Text($"Current mouse octree: {octreemouse}");
                 ImGui.End();
             }
         }
-        public static byte GetIndex(Int3 bid,Octree tree)
+            static Int3? ReadBatchId(BinaryReader patch)
+            {
+                byte first;
+                try { first = patch.ReadByte(); } catch (EndOfStreamException) { return null; }
+
+                return new Int3(
+                    first | (patch.ReadSByte() << 8),
+                    patch.ReadInt16(),
+                    patch.ReadInt16()
+                );
+            }
+        static void ApplyBatchPatch(BinaryReader patch, Int3 batchId)
+        {
+            int patchtreecount = patch.ReadByte();
+            var trees = PAXTerrainController.main.streamerV2.octreesStreamer.GetBatch(batchId).octrees.data;
+            for (int i = 0; i < patchtreecount; i++)
+            {
+                trees[patch.ReadByte()].data.CopyFrom(patch.ReadBytes(patch.ReadUInt16() * 4));
+            }
+        }
+            public static byte GetIndex(Int3 bid,Octree tree)
         {
             var trees = PAXTerrainController.main.streamerV2.octreesStreamer.GetBatch(bid).octrees;
             Int3 index = default;
@@ -386,7 +450,9 @@ namespace ClassLibrary1
                 return;
             }
             isbrushing = true;
-            var brush = GameObject.Instantiate(Class1.bundle.LoadAsset<GameObject>("removesphere"));
+            var brush = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            GameObject.Destroy(brush.GetComponent<Collider>());
+            brush.GetComponent<MeshRenderer>().material.color = Color.red;
             brush.EnsureComponent<Brush>().mode = mode;
         }
         public static void StopBrush()

@@ -6,7 +6,7 @@ using System.Reflection;
 using UnityEngine;
 namespace ClassLibrary1
 {
-    [BepInPlugin("com.hamlet.Editor", "Editor", "0.0.1")]
+    [BepInPlugin("com.Sora.OhThePlacesYoullGO", "Oh The Places You'll Go", "0.0.1")]
     [BepInDependency("Esper89.TerrainPatcher", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency((DearImGuiInjection.Metadata.GUID))]
     public class Class1 : BaseUnityPlugin
@@ -16,8 +16,6 @@ namespace ClassLibrary1
         public static AssetBundle bundle;
         public static AssetBundle shaderbundle;
         void Awake() {
-        bundle = AssetBundle.LoadFromFile(Path.Combine(Directory.GetCurrentDirectory(), "BepInEx", "plugins", "Editor",
-        "editor.assetbundle"));
         logger = Logger;
         SetUpPatches();
         }
@@ -101,6 +99,18 @@ namespace ClassLibrary1
                 if (Editor.isInEditor)
                     return self.octreesStreamer;
                 return orig(self, lod);
+            };
+            On.LargeWorldStreamer.UnloadBatch += (orig, self, index) =>
+            {
+                if (Editor.isInEditor)
+                    Editor.SaveForTempBatch(index);
+                orig(self, index);
+            };
+            On.LargeWorldStreamer.FinalizeLoadBatch += (orig, self, index) =>
+            {
+                if (Editor.isInEditor)
+                    Editor.LoadForTempBatch(index);
+                orig(self, index);
             };
         }
         public static IEnumerator EmptyCoroutine()

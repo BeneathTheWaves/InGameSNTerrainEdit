@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="BepInEx.BaseLib" Version="5.4.21" />
     <PackageReference Include="Costura.Fody" Version="5.7.0">
       <PrivateAssets>all</PrivateAssets></PackageReference>
     <PackageReference Include="Fody" Version="6.8.0">
@@ -21,6 +22,10 @@
     <PackageReference Include="Subnautica.GameLibs" Version="71288.0.0-r.0" />
     <PackageReference Include="System.Buffers" Version="4.5.1" />
     <PackageReference Include="System.Memory" Version="4.5.5" />
+    <PackageReference Include="UnityEngine.Modules" Version="2019.4.36">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -34,11 +39,10 @@
       <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\BepInEx\core\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="DearImGuiInjection">
-      <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\BepInEx\plugins\DearImGuiInjection\DearImGuiInjection.dll</HintPath>
-      
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\BepInEx\plugins\DearImGuiInjection\DearImGuiInjection.dll</HintPath>
     </Reference>
     <Reference Include="DearImguiSharp">
-      <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\BepInEx\plugins\DearImGuiInjection\DearImguiSharp.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\BepInEx\plugins\DearImGuiInjection\DearImguiSharp.dll</HintPath>
     </Reference>
     <Reference Include="MMHOOK_Assembly-CSharp">
       <HintPath>MMHOOK_Assembly-CSharp.dll</HintPath>
@@ -56,22 +60,22 @@
       <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\Subnautica.app\Contents\Resources\Data\Managed\Unity.Addressables.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\Subnautica.app\Contents\Resources\Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AssetBundleModule">
-      <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\Subnautica.app\Contents\Resources\Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\Subnautica.app\Contents\Resources\Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\Subnautica.app\Contents\Resources\Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.Physics2DModule">
-      <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\Subnautica.app\Contents\Resources\Data\Managed\UnityEngine.Physics2DModule.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\UnityEngine.Physics2DModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\Subnautica.app\Contents\Resources\Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 
