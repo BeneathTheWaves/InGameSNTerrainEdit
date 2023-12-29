@@ -345,7 +345,7 @@ namespace ClassLibrary1
                     }
                     ImGui.EndMenuBar();
                 }
-                if(ImGui.Button("Exit Editor",DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Exit Editor", DearImGuiInjection.Constants.DefaultVector2))
                 {
                     UnityMainThreadDispatcher.Enqueue(() =>
                     {
@@ -353,42 +353,58 @@ namespace ClassLibrary1
                         SceneCleaner.Open();
                     });
                 }
-                if(ImGui.Button("Remover Brush",DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Remover Brush", DearImGuiInjection.Constants.DefaultVector2))
                 {
                     UnityMainThreadDispatcher.Enqueue(() =>
                     {
                         StartBrush(BrushModes.Remove);
                     });
                 }
-                if(ImGui.Button("Addition Brush",DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Addition Brush", DearImGuiInjection.Constants.DefaultVector2))
                 {
                     UnityMainThreadDispatcher.Enqueue(() =>
                     {
                         StartBrush(BrushModes.Add);
                     });
                 }
-                if(ImGui.Button("Smoothing Brush",DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Smoothing Brush", DearImGuiInjection.Constants.DefaultVector2))
                 {
                     UnityMainThreadDispatcher.Enqueue(() =>
                     {
                         StartBrush(BrushModes.Smooth);
                     });
                 }
-                if(ImGui.Button("Flattening Brush",DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Flattening Brush", DearImGuiInjection.Constants.DefaultVector2))
                 {
                     UnityMainThreadDispatcher.Enqueue(() =>
                     {
                         StartBrush(BrushModes.Flat);
                     });
                 }
-                if(ImGui.Button("Type Brush",DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Type Brush", DearImGuiInjection.Constants.DefaultVector2))
                 {
                     UnityMainThreadDispatcher.Enqueue(() =>
                     {
                         StartBrush(BrushModes.Change);
                     });
                 }
-                ImGui.InputInt("Block type", ref curBrushType, 1, 0, 0);
+
+                if(ImGui.BeginCombo("Block Types", BlockTypes.blocktypes[curBrushType-1],(int)ImGuiComboFlags.None))
+                {
+                    foreach(var blocktype in BlockTypes.blocktypes)
+                    {
+                        bool is_selected = false;
+                        if (ImGui.SelectableBoolPtr(blocktype, ref is_selected,(int)ImGuiSelectableFlags.None,DearImGuiInjection.Constants.DefaultVector2)) 
+                        {
+                            curBrushType = Array.IndexOf(BlockTypes.blocktypes,blocktype) + 1;   
+                        }
+                        if(is_selected)
+                        {
+                            ImGui.SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui.EndCombo();
+                }
                 ImGui.SliderFloat("Brush radius", ref Brush.radius, 0.1f, 700f,null,(int)ImGuiSliderFlags.AlwaysClamp);
                 if (ImGui.Checkbox("Aurora", ref showingAurora))
                 {
