@@ -56,6 +56,9 @@
     <Reference Include="MonoMod.Utils">
       <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\BepInEx\core\MonoMod.Utils.dll</HintPath>
     </Reference>
+    <Reference Include="TerrainPatcher">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\BepInEx\plugins\TerrainPatcher\TerrainPatcher.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.Addressables">
       <HintPath>..\..\Library\Application Support\Steam\steamapps\common\Subnautica\Subnautica.app\Contents\Resources\Data\Managed\Unity.Addressables.dll</HintPath>
     </Reference>

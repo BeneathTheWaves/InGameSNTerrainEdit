@@ -21,6 +21,8 @@ using DearImguiSharp;
 using DearImGuiInjection.BepInEx;
 using static ClassLibrary1.Editor;
 using System.Net;
+using System.Linq.Expressions;
+using Unity.Collections;
 namespace ClassLibrary1
 {
     internal class Editor
@@ -44,6 +46,7 @@ namespace ClassLibrary1
         public static int curBrushType = 1;
         public static bool showTypeWindow = false;
         public static bool isInDropDown = false;
+        public static List<string> loadedpatchfilenames = new();
         public static void SaveForTempBatch(Int3 batchid)
         {
             unloadedbatches.Add(batchid);
@@ -52,7 +55,7 @@ namespace ClassLibrary1
         {
             if (!modifiedbatches.Contains(batchid))
                 return;
-            
+
             using (var fs = File.Open(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch"), FileMode.Create))
             {
                 using (var bw = new BinaryWriter(fs))
@@ -76,14 +79,21 @@ namespace ClassLibrary1
                     }
                 }
             }
+            using (var fs = File.OpenRead(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch")))
+            {
+                using (var br = new BinaryReader(fs)) {
+                    TerrainPatcher.TerrainRegistry.PatchTerrain($"Temp Patch for {batchid.ToString()}",br.BaseStream);
+                }
+            }
         }
         public static void LoadForTempBatch(Int3 batchid)
         {
             if (!modifiedbatches.Contains(batchid))
                 return;
-            if(unloadedbatches.Contains(batchid))
+            if (unloadedbatches.Contains(batchid))
                 unloadedbatches.Remove(batchid);
             Class1.logger.LogInfo($"Loading in temp batch ({batchid.x},{batchid.y},{batchid.z})");
+            /*
             using (var fs = File.OpenRead(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch")))
             {
                 using (var br = new BinaryReader(fs))
@@ -109,7 +119,7 @@ namespace ClassLibrary1
 
                 Class1.logger.LogInfo("Flushing Ranges Edited!");
                 LargeWorldStreamer.main.streamerV2.clipmapStreamer.FlushRangesEdited(PAXTerrainController.main.streamerV2.octreesStreamer.minLod, PAXTerrainController.main.streamerV2.octreesStreamer.maxLod);
-            }
+            */
         }
         public static void StartLoad()
         {
@@ -261,6 +271,20 @@ namespace ClassLibrary1
                                     using (var bw = new BinaryWriter(fs))
                                     {
                                         bw.WriteUInt32(0);
+                                        foreach (var name in loadedpatchfilenames)
+                                        {
+                                            using (var fs_ = File.OpenRead(name))
+                                            {
+                                                using (var br = new BinaryReader(fs_))
+                                                {
+                                                    if (br.ReadUInt32() != 0)
+                                                    {
+                                                        throw new InvalidDataException("Invalid temp patch?!");
+                                                    }
+                                                    bw.Write(br.ReadBytes((int)br.BaseStream.Length - (int)br.BaseStream.Position));
+                                                }
+                                            }
+                                        }
                                         foreach (var batchid in modifiedbatches)
                                         {
                                             if (unloadedbatches.Contains(batchid))
@@ -299,7 +323,6 @@ namespace ClassLibrary1
                                 }
                             }
                         }
-                        /*
                         if (ImGui.MenuItemBool("Load", "Ctrl+S", false, true))
                         {
                             var openfilename = new OpenFileName();
@@ -316,32 +339,29 @@ namespace ClassLibrary1
                                 {
                                     using (var br = new BinaryReader(fs))
                                     {
-                                        br.ReadUInt32();
+                                        TerrainPatcher.TerrainRegistry.PatchTerrain(openfilename.lpstrFile, br.BaseStream);
+                                        UnityMainThreadDispatcher.Enqueue(() =>
+                                        {
+                                            LargeWorldStreamer.main.ReloadSettings();
+                                        });
+                                        loadedpatchfilenames.Add(openfilename.lpstrFile);
+                                    }
+                                    using (var br = new BinaryReader(fs))
+                                    {
+                                        if (br.ReadUInt32() != 0)
+                                        {
+                                            throw new InvalidDataException("Invalid temp patch?!");
+                                        }
                                         while (true)
                                         {
-                                            try
-                                            {
-                                                Int3? batchId = ReadBatchId(br);
-                                                if (batchId is null) break;
-                                                Int3 id = batchId.Value;
-                                                ApplyBatchPatch(br, id);
-                                                Class1.logger.LogInfo("Loading in modified octrees!");
-                                                LargeWorldStreamer.main.streamerV2.clipmapStreamer.AddToRangesEdited(LargeWorldStreamer.main.GetBatchBlockBounds(id));
-                                            }
-                                            catch (EndOfStreamException)
-                                            {
-                                                throw new InvalidDataException("Invalid Patch!");
-                                            }
+                                            Int3? batchid = ReadBatchId(br);
+                                            if (batchid is null) break;
+                                            modifiedbatches.Add(batchid.Value);
                                         }
-
                                     }
-
-                                    Class1.logger.LogInfo("Flushing Ranges Edited!");
-                                    LargeWorldStreamer.main.streamerV2.clipmapStreamer.FlushRangesEdited(PAXTerrainController.main.streamerV2.octreesStreamer.minLod, PAXTerrainController.main.streamerV2.octreesStreamer.maxLod);
                                 }
                             }
                         }
-                        */
                         ImGui.EndMenu();
                     }
                     ImGui.EndMenuBar();

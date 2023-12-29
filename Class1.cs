@@ -7,7 +7,7 @@ using UnityEngine;
 namespace ClassLibrary1
 {
     [BepInPlugin("com.Sora.OhThePlacesYoullGO", "Oh The Places You'll Go", "0.0.1")]
-    [BepInDependency("Esper89.TerrainPatcher", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("Esper89.TerrainPatcher")]
     [BepInDependency((DearImGuiInjection.Metadata.GUID))]
     public class Class1 : BaseUnityPlugin
     {
