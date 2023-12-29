@@ -43,6 +43,7 @@ namespace ClassLibrary1
         public static bool showingAurora = false;
         public static int curBrushType = 1;
         public static bool showTypeWindow = false;
+        public static bool isInDropDown = false;
         public static void SaveForTempBatch(Int3 batchid)
         {
             unloadedbatches.Add(batchid);
@@ -388,9 +389,10 @@ namespace ClassLibrary1
                         StartBrush(BrushModes.Change);
                     });
                 }
-
+                var shouldsettotrue = false;
                 if(ImGui.BeginCombo("Block Types", BlockTypes.blocktypes[curBrushType-1],(int)ImGuiComboFlags.None))
                 {
+                    shouldsettotrue = true;
                     foreach(var blocktype in BlockTypes.blocktypes)
                     {
                         bool is_selected = false;
@@ -405,6 +407,7 @@ namespace ClassLibrary1
                     }
                     ImGui.EndCombo();
                 }
+                isInDropDown = shouldsettotrue;
                 ImGui.SliderFloat("Brush radius", ref Brush.radius, 0.1f, 700f,null,(int)ImGuiSliderFlags.AlwaysClamp);
                 if (ImGui.Checkbox("Aurora", ref showingAurora))
                 {

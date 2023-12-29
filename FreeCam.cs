@@ -109,7 +109,7 @@ namespace ClassLibrary1
             }
 
             float axis = Input.GetAxis("Mouse ScrollWheel");
-            if (axis != 0)
+            if (axis != 0 && !Editor.isInDropDown)
             {
                 var zoomSensitivity = fastMode ? this.fastZoomSensitivity : this.zoomSensitivity;
                 transform.position = transform.position + transform.forward * axis * zoomSensitivity;
