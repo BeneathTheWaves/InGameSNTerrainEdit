@@ -61,18 +61,22 @@ namespace ClassLibrary1
             var fastMode = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
             var movementSpeed = fastMode ? fastMovementSpeed : this.movementSpeed;
 
-            //Built in unity axis that map to A & Left Arrow for negative and D & Right Arrow for positive
-            float x = Input.GetAxis("Horizontal");
-            //Same here buth with W & Up Arrow and S & Down Arrow
-            float z = Input.GetAxis("Vertical");
+            float x = 0;
+            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) x = -1;
+            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) x = 1;
+
+            float z = 0;
+            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) x = 1;
+            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) x = -1;
 
             float y = 0;
-            if (Input.GetKeyDown(KeyCode.Q)) y = 1;
-            if (Input.GetKeyDown(KeyCode.E)) y = -1;
+            if (Input.GetKey(KeyCode.Q)) y = 1;
+            if (Input.GetKey(KeyCode.E)) y = -1;
+
             Vector3 movementDelta = new Vector3(x, y, z);
 
             float globalUp = 0;
-            if(Input.GetKeyDown(KeyCode.R) || Input.GetKey(KeyCode.PageUp)) globalUp = 1;
+            if(Input.GetKey(KeyCode.R) || Input.GetKey(KeyCode.PageUp)) globalUp = 1;
             if (Input.GetKey(KeyCode.F) || Input.GetKey(KeyCode.PageDown)) globalUp = -1;
 
             //Handle relative movement
