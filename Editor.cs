@@ -56,7 +56,7 @@ namespace ClassLibrary1
             if (!modifiedbatches.Contains(batchid))
                 return;
 
-            using (var fs = File.Open(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch"), FileMode.Create))
+            using (var fs = File.Open(Path.Combine(Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName).FullName).FullName).FullName, "tempsavepathfix"), $"TempOctree_{batchid.x}-{batchid.y}-{batchid.z}.optoctreepatch"), FileMode.Create))
             {
                 using (var bw = new BinaryWriter(fs))
                 {
