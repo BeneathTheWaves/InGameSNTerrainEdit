@@ -1,5 +1,4 @@
 ﻿using ClassLibrary1.WorldStreaming;
-using IL.UnityEngine.PostProcessing;
 using mset;
 using System;
 using System.Collections;
@@ -17,12 +16,12 @@ using UnityEngine.SceneManagement;
 using uSky;
 using UWE;
 using WorldStreaming;
-using DearImguiSharp;
-using DearImGuiInjection.BepInEx;
 using static ClassLibrary1.Editor;
 using System.Net;
 using System.Linq.Expressions;
 using Unity.Collections;
+using ImGuiNET;
+using ImGuiUnityInject;
 namespace ClassLibrary1
 {
     internal class Editor
@@ -136,6 +135,7 @@ namespace ClassLibrary1
             cam1.EnsureComponent<WaterSurfaceOnCamera>();
             GameObject.Destroy(MainCameraV2.main.gameObject);
             MainCamera._camera = cam1.GetComponent<Camera>();
+            cam1.GetComponent<Camera>().tag = "MainCamera";
             cam = cam1;
             var garbagecheckgo = new GameObject("GCCheck");
             garbagecheckgo.EnsureComponent<GarbageCheckReplacement>();
@@ -196,8 +196,8 @@ namespace ClassLibrary1
                     SkyManager._Instance.GlobalSky = go.GetComponent<Sky>();
             }
             Time.timeScale = 1f;
-            DearImguiSharp.ImGui.GetIO().SetPlatformImeDataFn = null;
-            DearImGuiInjection.DearImGuiInjection.Render += GUI;
+            
+            ImGuiInstance.GetOrCreate().Layout += GUI;
         }
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         public struct OpenFileName
@@ -233,8 +233,7 @@ namespace ClassLibrary1
         static extern bool GetOpenFileName(ref OpenFileName ofn);
         static void GUI()
         {
-            UnityMainThreadDispatcher.Enqueue(() =>
-            {
+     
                 var ray = cam.GetComponent<Camera>().ScreenPointToRay(Input.mousePosition);
                 RaycastHit hit;
                 Vector3 hitpos = default;
@@ -245,15 +244,14 @@ namespace ClassLibrary1
                 mousebatch = LargeWorldStreamer.main.GetContainingBatch(hitpos);
                 var block = LargeWorldStreamer.main.GetBlock(hitpos);
                 var mouseoctreeindex = block / LargeWorldStreamer.main.blocksPerTree;
-                octreemouse = mouseoctreeindex;
-            });
-            if (ImGui.Begin("World Editor Main Window", ref iswindowopen, (int)ImGuiWindowFlags.MenuBar))
+            octreemouse = mouseoctreeindex;
+            if (ImGui.Begin("World Editor Main Window", ref iswindowopen, ImGuiWindowFlags.MenuBar))
             {
                 if (ImGui.BeginMenuBar())
                 {
                     if (ImGui.BeginMenu("File", true))
                     {
-                        if (ImGui.MenuItemBool("Save", "Ctrl+S", false, true))
+                        if (ImGui.MenuItem("Save", "Ctrl+S", false, true))
                         {
                             var openfilename = new OpenFileName();
                             openfilename.lStructSize = Marshal.SizeOf(openfilename);
@@ -323,7 +321,7 @@ namespace ClassLibrary1
                                 }
                             }
                         }
-                        if (ImGui.MenuItemBool("Load", "Ctrl+S", false, true))
+                        if (ImGui.MenuItem("Load", "Ctrl+S", false, true))
                         {
                             var openfilename = new OpenFileName();
                             openfilename.lStructSize = Marshal.SizeOf(openfilename);
@@ -340,10 +338,7 @@ namespace ClassLibrary1
                                     using (var br = new BinaryReader(fs))
                                     {
                                         TerrainPatcher.TerrainRegistry.PatchTerrain(openfilename.lpstrFile, br.BaseStream);
-                                        UnityMainThreadDispatcher.Enqueue(() =>
-                                        {
                                             LargeWorldStreamer.main.ReloadSettings();
-                                        });
                                         loadedpatchfilenames.Add(openfilename.lpstrFile);
                                     }
                                     using (var br = new BinaryReader(fs))
@@ -366,48 +361,41 @@ namespace ClassLibrary1
                     }
                     ImGui.EndMenuBar();
                 }
-                if (ImGui.Button("Exit Editor", DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Exit Editor"))
                 {
-                    UnityMainThreadDispatcher.Enqueue(() =>
-                    {
+                    
                         Directory.Delete(Path.Combine(Directory.GetCurrentDirectory(), "tempsavepathfix"), true);
                         SceneCleaner.Open();
-                    });
+                   
                 }
-                if (ImGui.Button("Remover Brush", DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Remover Brush"))
                 {
-                    UnityMainThreadDispatcher.Enqueue(() =>
-                    {
                         StartBrush(BrushModes.Remove);
-                    });
+                   
                 }
-                if (ImGui.Button("Addition Brush", DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Addition Brush"))
                 {
-                    UnityMainThreadDispatcher.Enqueue(() =>
-                    {
+                    
                         StartBrush(BrushModes.Add);
-                    });
+                  
                 }
-                if (ImGui.Button("Smoothing Brush", DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Smoothing Brush"))
                 {
-                    UnityMainThreadDispatcher.Enqueue(() =>
-                    {
+                   
                         StartBrush(BrushModes.Smooth);
-                    });
+                   
                 }
-                if (ImGui.Button("Flattening Brush", DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Flattening Brush"))
                 {
-                    UnityMainThreadDispatcher.Enqueue(() =>
-                    {
+                   
                         StartBrush(BrushModes.Flat);
-                    });
+                   
                 }
-                if (ImGui.Button("Type Brush", DearImGuiInjection.Constants.DefaultVector2))
+                if (ImGui.Button("Type Brush"))
                 {
-                    UnityMainThreadDispatcher.Enqueue(() =>
-                    {
+                   
                         StartBrush(BrushModes.Change);
-                    });
+                    
                 }
                 var shouldsettotrue = false;
                 if(ImGui.BeginCombo("Block Types", BlockTypes.blocktypes[curBrushType-1],(int)ImGuiComboFlags.None))
@@ -416,7 +404,7 @@ namespace ClassLibrary1
                     foreach(var blocktype in BlockTypes.blocktypes)
                     {
                         bool is_selected = false;
-                        if (ImGui.SelectableBoolPtr(blocktype, ref is_selected,(int)ImGuiSelectableFlags.None,DearImGuiInjection.Constants.DefaultVector2)) 
+                        if (ImGui.Selectable(blocktype)) 
                         {
                             curBrushType = Array.IndexOf(BlockTypes.blocktypes,blocktype) + 1;   
                         }
@@ -428,24 +416,22 @@ namespace ClassLibrary1
                     ImGui.EndCombo();
                 }
                 isInDropDown = shouldsettotrue;
-                ImGui.SliderFloat("Brush radius", ref Brush.radius, 0.1f, 700f,null,(int)ImGuiSliderFlags.AlwaysClamp);
+                ImGui.SliderFloat("Brush radius", ref Brush.radius, 0.1f, 700f);
                 if (ImGui.Checkbox("Aurora", ref showingAurora))
                 {
                     if (showingAurora)
                     {
-                        UnityMainThreadDispatcher.Enqueue(() =>
-                        {
+                        
                             AddressablesUtility.LoadScene("Aurora", LoadSceneMode.Additive);
-                        });
+                      
                     }else
                     {
-                        UnityMainThreadDispatcher.Enqueue(() =>
-                        {
+                      
                             GameObject.Destroy(GameObject.Find("Aurora"));
-                        });
+                        
                     }
                 }
-                ImGui.SliderFloat("Camera Speed", ref cam.GetComponent<FreeCam>().movementSpeed, 0.1f, 135f, null, (int)ImGuiSliderFlags.AlwaysClamp);
+                ImGui.SliderFloat("Camera Speed", ref cam.GetComponent<FreeCam>().movementSpeed, 0.1f, 135f);
                 ImGui.Checkbox("Water", ref cam.GetComponent<WaterSurfaceOnCamera>().visible);
                 ImGui.Text($"Current mouse batch: {mousebatch}");
                 ImGui.Text($"Current mouse octree: {octreemouse}");
@@ -561,8 +547,6 @@ namespace ClassLibrary1
                     go.SetActive(true);
             }
             transform.localScale = new Vector3(radius, radius, radius);
-            if (DearImGuiInjection.DearImGuiInjection.IsCursorVisible)
-                return;
             var ray = Editor.cam.GetComponent<Camera>().ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
             if(Physics.Raycast(ray,out hit,Mathf.Infinity))
@@ -580,7 +564,7 @@ namespace ClassLibrary1
                     args = new VoxelandData.OctNode.BlendArgs(VoxelandData.OctNode.BlendOp.Union, false, 0);
                 else if(mode == BrushModes.Change)
                     args = new VoxelandData.OctNode.BlendArgs(VoxelandData.OctNode.BlendOp.Overwrite, false, 0);
-                var size = new Vector3(radius, radius, radius);
+                var size = new Vector3(2.0f*3.14f*radius, 2*radius, 2*radius);
                 var bounds = new Bounds(GetComponent<Renderer>().bounds.center, size);
                 var mins = Int3.Floor(LargeWorldStreamer.main.land.transform.InverseTransformPoint(bounds.min));
                 var maxs = Int3.Floor(LargeWorldStreamer.main.land.transform.InverseTransformPoint(bounds.max));
