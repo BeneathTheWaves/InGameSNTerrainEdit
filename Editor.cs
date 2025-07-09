@@ -21,6 +21,7 @@ using System.Net;
 using System.Linq.Expressions;
 using Unity.Collections;
 using ImGuiNET;
+using ImGuiNET.Unity;
 using ImGuiUnityInject;
 namespace ClassLibrary1
 {
@@ -196,8 +197,9 @@ namespace ClassLibrary1
                     SkyManager._Instance.GlobalSky = go.GetComponent<Sky>();
             }
             Time.timeScale = 1f;
-            
             ImGuiInstance.GetOrCreate().Layout += GUI;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.SetCursor(null,Vector2.zero, CursorMode.Auto);
         }
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         public struct OpenFileName
