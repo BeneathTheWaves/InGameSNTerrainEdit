@@ -23,6 +23,8 @@ using Unity.Collections;
 using ImGuiNET;
 using ImGuiNET.Unity;
 using ImGuiUnityInject;
+using Newtonsoft.Json;
+
 namespace ClassLibrary1
 {
     internal class Editor
@@ -33,6 +35,7 @@ namespace ClassLibrary1
         public static GameObject editor;
         public static bool isbrushing = false;
         private bool renderbrushmenu = false;
+        private static bool isblocktypeaddermenuopen = false;
         public static Int3 octreemouse;
         public static bool iswindowopen = true;
         private string rad = "2.5";
@@ -247,6 +250,58 @@ namespace ClassLibrary1
                 var block = LargeWorldStreamer.main.GetBlock(hitpos);
                 var mouseoctreeindex = block / LargeWorldStreamer.main.blocksPerTree;
             octreemouse = mouseoctreeindex;
+            if (ImGui.Begin("Block Type Adder Window", ref isblocktypeaddermenuopen, ImGuiWindowFlags.MenuBar))
+            {
+                if (ImGui.BeginMenuBar())
+                {
+                    if (ImGui.BeginMenu("File", true))
+                    {
+                        if (ImGui.MenuItem("Save Block Type Manifest", true))
+                        {
+                            var openfilename = new OpenFileName();
+                            openfilename.lStructSize = Marshal.SizeOf(openfilename);
+                            openfilename.lpstrFilter = "Manifest(*.json)\0\0";
+                            openfilename.lpstrFile = "blocktypes.json";
+                            openfilename.nMaxFile = 256;
+                            openfilename.lpstrFileTitle = new string(new char[64]);
+                            openfilename.nMaxFileTitle = openfilename.lpstrFileTitle.Length;
+                            openfilename.lpstrTitle = "Save to...";
+
+                            if (GetSaveFileName(ref openfilename))
+                            {
+                                using (var fs = File.CreateText(openfilename.lpstrFile))
+                                {
+                                    
+                                    var serializer = JsonSerializer.Create();
+                                    serializer.Serialize(fs,BlockTypes.custom_images_name_to_base64);
+                                }
+                            }
+                        }
+
+                        if (ImGui.MenuItem("Load Block Type Manifest", true))
+                        {
+                            var openfilename = new OpenFileName();
+                            openfilename.lStructSize = Marshal.SizeOf(openfilename);
+                            openfilename.lpstrFilter = "Manifest(*.json)\0\0";
+                            openfilename.lpstrFile = "blocktypes.json";
+                            openfilename.nMaxFile = 256;
+                            openfilename.lpstrFileTitle = new string(new char[64]);
+                            openfilename.nMaxFileTitle = openfilename.lpstrFileTitle.Length;
+                            openfilename.lpstrTitle = "Open Manifest";
+                            if (GetOpenFileName(ref openfilename))
+                            {
+                                using (var fs = File.OpenText(openfilename.lpstrFile))
+                                { 
+                                    var serializer = JsonSerializer.Create();
+                                   BlockTypes.custom_images_name_to_base64 = BlockTypes.custom_images_name_to_base64.Concat(serializer.Deserialize(fs,typeof(Dictionary<string,string>)) as Dictionary<string,string>).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                                }
+                            }
+                        }
+                    }
+                    
+                }
+                
+            }
             if (ImGui.Begin("World Editor Main Window", ref iswindowopen, ImGuiWindowFlags.MenuBar))
             {
                 if (ImGui.BeginMenuBar())
@@ -370,7 +425,12 @@ namespace ClassLibrary1
                         SceneCleaner.Open();
                    
                 }
-                if (ImGui.Button("Remover Brush"))
+
+                if (ImGui.Button("Open Block Type Adder"))
+                {
+                    isblocktypeaddermenuopen = true;
+                }
+                    if (ImGui.Button("Remover Brush"))
                 {
                         StartBrush(BrushModes.Remove);
                    
